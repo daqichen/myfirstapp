@@ -125,7 +125,7 @@ You should now have the following commands available on your system:
 5. `node`
 
 ---
-# Section 1: Frontend Crashcourse & Dynamic Styling
+# Section 1: Frontend Crash Course & Dynamic Styling
 Refer to [`react-bootstrap docs`](https://react-bootstrap.github.io/getting-started/introduction)
 
 Refer to [`bootstrap docs`](https://getbootstrap.com/docs/4.4/getting-started/theming/)
@@ -158,28 +158,39 @@ npm start
 To Install them, use the following command:
 
 ```bash
-npm i react-bootstrap sass bootstrap
+npm i sass
+// Ignore the other two for now, we will do a deep dive into SASS in Section 1
 ```
 
 
-## Dark Mode
+## Light & Dark Mode, In `SCSS`
 
 
 A good example is [`create-react-app docs`](https://create-react-app.dev/docs/getting-started)
 
-The file structure should look something like this: 
+We will be following this [`medium article`](https://javascript.plainenglish.io/the-best-way-to-add-dark-mode-to-your-react-sass-project-ce3ae3bd8616) closely in today's demo!
+
+Going from `VANILLA` -> `NOVICE` -> `JEDI`, each with added difficulty, by the end you will have a cool UI that get "toggle" between "Light" and "Dark" mode!
+
+
+### 1. `VANILLA` -> `NOVICE`: Introduce SCSS Variables to Stylesheets
+
+Modify the project structure like so:
+
 ```
 your_project/
 ├── src/
-│   ├── styles/
-│   │   └── _color.scss
+│   ├── styles/ //ADD this folder and a file for color variables
+│   │   └── _colors.scss
 │   ├── App.js
-│   └── App.scss
+│   ├── App.scss // CHANGE file type to "scss"
+│   └── ...
 └── node_modules/
     └── packages_of_dependencies/
 ```
 
-In `_colors.scss`:
+#### In `_colors.scss`, you want to add your GLOBAL color variables. They should be colors that represent all aspects of your UI, so keep in mind the contrast and versatility of the colors you choose.
+
 ```scss
 // Your global color variables
 $blue-purple: #4A44F2;
@@ -193,7 +204,305 @@ $black: #000;
 $pale-grey: #efefef;
 ```
 
+#### Now you need to import `_colors.scss` into the main stylesheet, so in `App.scss`, add:
+
+```scss
+@import './styles/_themes.scss';
+
+```
+
+From there, you are able to utilize the global color variables you have selected in `App.scss`, like this:
+
+```scss
+/*
+VANILLA
+*/
+background-color: #282c34;
+color: white;
+
+/*
+NOVICE (SCSS properties)
+*/
+background-color: $purple;
+color: $blue-green;
+```
+
+#### Specifically, we want to modify the color and background-color for _.App-header_ and _.App-link_:
+```scss
+.App-header {
+    ... // other css properties
+    background-color: $purple;
+    color: $blue-green;
+}
+
+.App-link {
+    color: $yellow;
+}
+```
+
+### 2. `NOVICE` -> `JEDI`: In order to achieve toggling between modes, introduce & implement the concept of "Themes" to our scss.
+
+Modify the project structure like so:
+
+```
+your_project/
+├── src/
+│   ├── styles/ 
+│   │   ├── _colors.scss
+│   │   └── _themes.scss // ADD this file
+│   └── ...
+└── node_modules/
+    └── packages_of_dependencies/
+```
+
+#### In `_themes.scss`, you want to define "the relationship between style properties and the Theme they correspond to".
+
+```scss
+@import '_colors.scss';
+
+$themes: (
+  light: (
+    primary-color: $dark-blue,
+    accent-color: $purple,
+    primary-text-color: $dark-blue,
+    secondary-text-color: $black,
+    general-background: $pale-grey,
+  ),
+  dark: (
+    primary-color: $blue-green,
+    accent-color: $green,
+    primary-text-color: $blue-green,
+    secondary-text-color: $pale-grey,
+    general-background: $dark-blue,
+  )
+);
+```
+
+As you can see here, background color is grey when it's "Light" but dark blue when it's "Dark".
+
+#### Introducing @mixin and @function with Maps in SCSS
+
+"Map" in SCSS is able to populate CSS properties easily:
+
+```scss
+$icons: ("eye": "\f112", "start": "\f12e", "stop": "\f12f");
+
+@each $name, $glyph in $icons {
+  .icon-#{$name}:before {
+    display: inline-block;
+    font-family: "Icon Font";
+    content: $glyph;
+  }
+}
+```
+...WHICH compiles to the following CSS properties:
+```css
+.icon-eye:before {
+  display: inline-block;
+  font-family: "Icon Font";
+  content: "";
+}
+
+.icon-start:before {
+  display: inline-block;
+  font-family: "Icon Font";
+  content: "";
+}
+
+.icon-stop:before {
+  display: inline-block;
+  font-family: "Icon Font";
+  content: "";
+}
+```
+
+_"Mixins allow you to define styles that can be re-used throughout your stylesheet. Mixins are included into the current context using the @include"_
+
+#### Now we need to utilize these advanced SCSS notations in `_themes.scss`:
+
+```scss
+@mixin themed() {
+  @each $theme, $map in $themes {
+    .theme--#{$theme} & {
+      $theme-map: () !global;
+      @each $key, $submap in $map {
+        $value: map-get(map-get($themes, $theme), '#{$key}');
+        $theme-map: map-merge($theme-map, ($key: $value)) !global;
+      }
+      @content;
+      $theme-map: null !global;
+    }
+  }
+}
+
+@function themedStyle($key) {
+  @return map-get($theme-map, $key);
+}
+```
+
+Here’s what’s happening here: ([Read More](https://medium.com/@katiemctigue/how-to-create-a-dark-mode-in-sass-609f131a3995))
+
+1.  The `themed` mixin iterates through all of your `$themes` and for that theme defines a global Sass map called `$theme-map`
+
+2.  It takes the blurb of code you entered and outputs it with the theme-defined values in the place where you used the `themedStyle` function.
+
+3. It outputs the themed blurb using @content
+
+#### Now you need to import `_themes.scss` into the main stylesheet, so in `App.scss`, add:
+
+```scss
+@import './styles/_themes.scss';
+// You can get rid of the import statement for _colors.scss now since you have defined the usage of colors in themes definition 
+```
+
+#### We want to define "Dark" and "Light" mode-specific properties in _.App-header_ and _.App-link_:
+
+```scss
+.App-header {
+    ... // other css properties
+    @include themed() {
+        color: themedStyle('primary-color');
+        background-color: themedStyle('general-background');
+      }
+}
+
+.App-link {
+    @include themed() {
+        color: themedStyle('accent-color');
+      }
+}
+```
+
+### BUT not quite! Because we haven't modified `.js` but only the stylesheets
+
+## Light and Dark Mode, In `Javascript`
+
+#### Update import and Introduce `useContext` and `useState` in `App.js`
+
+```js
+import React, {useContext, useState} from 'react';
+import './App.scss';
+
+const initialThemeState = {
+  theme: "light",
+  setTheme: () => null
+};
+
+const ThemeContext = React.createContext(initialThemeState);
+
+const App = () => {
+  const [theme, setTheme] = useState(initialThemeState.theme);
+  return (
+    <ThemeContext.Provider value={{ theme, setTheme }}>
+        <div className={`theme--${theme}`}>
+          <div className="App">
+            <header className="App-header">
+              <img src={logo} className="App-logo" alt="logo" />
+              <p>
+                Edit <code>src/App.js</code> and save to reload.
+              </p>
+              <a
+                className="App-link"
+                href="https://reactjs.org"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Learn React
+              </a>
+            </header>
+          </div> 
+        </div>
+    </ThemeContext.Provider>
+  );
+}
+
+```
+
+There's quite a bit to unpack here:
+
+1. Functions starting with use are called `Hooks`. `useState` is a built-in Hook provided by React. It allows for data sharing across components and data updating. ([React Doc](https://beta.reactjs.org/learn#using-hooks))
+
+2. `Context` lets components pass information deep down without explicitly passing props. ([React Doc](https://beta.reactjs.org/apis/react/createContext#creating-context))
+
+3. `<ThemeContext.Provider>` wraps the entirety of the Application so you can expose the `Context` variables `theme` and `setTheme` throughout the application.
+
+
+You might be confused as to why it is `setTheme: () => null` and how do we plan on update between the two themes. We are actually one final component, which is the actual "Toggle" for the user to select between Light and Dark. 
+
+#### The Dropdown for "Light" and "Dark" Mode in `App.js`
+
+```js
+const App = () => {
+  const [theme, setTheme] = useState(initialThemeState.theme);
+  return (
+    <ThemeContext.Provider value={{ theme, setTheme }}>
+        <div className={`theme--${theme}`}>
+         ...
+              <ThemeSetter /> // RENDER the component
+         ...
+        </div>
+    </ThemeContext.Provider>
+  );
+}
+
+const themeOptions = [{ value: "light" }, { value: "dark" }];
+
+export const ThemeSetter = () => {
+  const {theme, setTheme} = useContext(ThemeContext)
+  return (
+    <select value={theme} onChange={(e) => setTheme(e.currentTarget.value)}>
+      {themeOptions.map((option, idx) => (
+        <option value={option.value} key={idx}>
+          {option.value}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+```
+
+## CONGRATS 🎉🎊🥂! Refresh and you should see a webpage that supports "Light" and "Dark" mode!
+
+The FINAL file structure should look something like this: 
+```
+your_project/
+├── src/
+│   ├── styles/
+│   │   ├── _colors.scss
+│   │   └── _themes.scss
+│   ├── App.js
+│   ├── App.scss
+│   └── ...
+└── node_modules/
+    └── packages_of_dependencies/
+```
+
+#### If you feel so inclined to follow "Modular" design practices, you can follow the sourcecode along and break the code into smaller modular components. I hope this gave you a glimpse into the potential of React Web Apps! 
+
+The FINAL file structure should look something like this (`Modular` approach): 
+```
+your_project/
+├── src/
+│   ├── styles/
+│   │   ├── _colors.scss
+│   │   └── _themes.scss
+│   ├── components/
+│   │   ├── ThemeSetter.scss
+│   │   └── ThemeContext.scss
+│   ├── App.js
+│   ├── App.scss
+│   └── ...
+└── node_modules/
+    └── packages_of_dependencies/
+```
+
+
 Here's also an [article](https://www.toptal.com/sass/theming-scss-tutorial) on advanced theming with SASS/SCSS!
+
+---
+# Section 2: Backend ExpressJS
+
 
 ---
 Below are the standard default documentations on React
