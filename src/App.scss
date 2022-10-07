@@ -1,3 +1,5 @@
+@import './styles/_themes.scss';
+
 .App {
   text-align: center;
 }
@@ -14,18 +16,50 @@
 }
 
 .App-header {
-  background-color: #282c34;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   font-size: calc(10px + 2vmin);
+  /*
+    VANILLA
+  */
+  background-color: #282c34;
   color: white;
+
+  /*
+    NOVICE (SCSS properties)
+  */
+  // background-color: $purple;
+  // color: $blue-green;
+
+  /*
+    JEDI (SCSS Theming)
+  */
+  @include themed() {
+    color: themedStyle('primary-color');
+    background-color: themedStyle('general-background');
+  }
 }
 
 .App-link {
+  /*
+    VANILLA
+  */
   color: #61dafb;
+
+  /*
+    NOVICE (SCSS properties)
+  */
+  // color: $yellow;
+
+  /*
+    JEDI (SCSS Theming)
+  */
+  @include themed() {
+    color: themedStyle('accent-color');
+  }
 }
 
 @keyframes App-logo-spin {
